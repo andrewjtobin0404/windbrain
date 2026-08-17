@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Maagan Wind Brain</title>
+
+<!-- ▼▼ PASTE YOUR APPS SCRIPT /exec URL BETWEEN THE QUOTES ▼▼ -->
+<script>var APP_URL = "PASTE-YOUR-EXEC-URL-HERE";</script>
+<!-- ▲▲ nothing else needs editing ▲▲ -->
+
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Wind Brain">
+<meta name="theme-color" content="#1d2340">
+<style>
+  html,body{margin:0;padding:0;height:100%;background:#1d2340}
+  iframe{border:0;width:100%;height:100%;display:block}
+  body{height:100vh;height:100dvh}
+  #note{color:#f7c519;font-family:-apple-system,sans-serif;font-weight:800;
+        padding:40px 24px;font-size:15px;line-height:1.5}
+</style>
+</head>
+<body>
+<script>
+if (APP_URL.indexOf('http') === 0) {
+  document.write('<iframe src="'+APP_URL+'" allow="fullscreen"></iframe>');
+} else {
+  document.write('<div id=note>One step left: open index.html and paste your Apps Script /exec URL into APP_URL at the top.</div>');
+}
+</script>
+</body>
+</html>
