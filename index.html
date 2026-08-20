@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Wind Brain</title>
+
+<!-- ▼▼ your Apps Script /exec URL ▼▼ -->
+<script>var APP_URL = "https://script.google.com/macros/s/AKfycbxwSRdEO-ypVAp8R8Z3NQfc0TcYvUWCFMe5gGoAPCa0m5ZD_vzFdkMYlNN3jiIbJ2U/exec";</script>
+<!-- ▲▲ nothing else needs editing ▲▲ -->
+
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="preconnect" href="https://script.google.com">
+<link rel="preconnect" href="https://script.googleusercontent.com">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Wind Brain">
+<meta name="theme-color" content="#1d2340">
+<style>
+  html,body{margin:0;padding:0;background:#1d2340}
+  body{display:flex;flex-direction:column;height:100vh;height:100dvh}
+  #safetop{flex:0 0 env(safe-area-inset-top,0px);background:#1d2340}
+  #safebot{flex:0 0 env(safe-area-inset-bottom,0px);background:#1d2340}
+  #frame{position:relative;flex:1 1 auto;min-height:0}
+  iframe{border:0;width:100%;height:100%;display:block}
+  /* zine splash: covers the iframe until the app paints, and stays when offline */
+  #splash{position:absolute;inset:0;background:#f7f4ee;display:flex;flex-direction:column;
+          justify-content:flex-start;align-items:stretch;transition:opacity .25s;z-index:2;
+          font-family:-apple-system,system-ui,sans-serif;color:#1d2340;-webkit-font-smoothing:antialiased}
+  #splash.hide{opacity:0;pointer-events:none}
+  #splash .band{background:#f7c519;transform:skewY(-1.2deg);transform-origin:left;padding:16px 16px 15px}
+  #splash .band>div{transform:skewY(1.2deg);transform-origin:left;display:flex;align-items:center;gap:10px}
+  #splash h1{font-size:23px;margin:0 0 5px;transform:rotate(-1deg);white-space:nowrap;padding-right:4px;font-family:Arial Black,-apple-system,sans-serif;font-style:italic;font-weight:900;background:repeating-linear-gradient(180deg,#1d2340 0 6px,#e5399e 6px 7.8px);-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-stroke:.6px #1d2340}
+  #splash .subj{font-style:italic;font-weight:700;font-size:8.5px;margin-top:1px;display:flex;justify-content:space-between}
+  #splash .slash{background:#e5399e;height:6px;transform:skewY(-1.2deg)}
+  #splash .msg{font-style:italic;font-weight:600;font-size:14px;padding:18px 22px}
+  #splash .msg b{color:#e5399e}
+  #note{color:#f7c519;font-family:-apple-system,sans-serif;font-weight:800;
+        padding:40px 24px;font-size:15px;line-height:1.5}
+</style>
+</head>
+<body>
+<div id="safetop"></div>
+<div id="frame">
+  <div id="splash">
+    <div class="band"><div><span style="display:inline-block;padding:4px 2px;line-height:0"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#1d2340" stroke-width="2.4" stroke-linecap="round"><line x1="3.5" y1="6" x2="20.5" y2="6"></line><line x1="3.5" y1="12" x2="20.5" y2="12"></line><line x1="3.5" y1="18" x2="20.5" y2="18"></line></svg></span><div><h1>WIND BRAIN</h1><div class="subj" aria-label="Know before it blows"><span>K</span><span>N</span><span>O</span><span>W</span><span style="width:6px"></span><span>B</span><span>E</span><span>F</span><span>O</span><span>R</span><span>E</span><span style="width:6px"></span><span>I</span><span>T</span><span style="width:6px"></span><span>B</span><span>L</span><span>O</span><span>W</span><span>S</span></div></div></div></div>
+    <div class="slash"></div>
+    <div class="msg" id="splashmsg"><b>–</b> Reading the wind &hellip;</div>
+  </div>
+</div>
+<div id="safebot"></div>
+<script>
+(function(){
+  var frame=document.getElementById('frame'), splash=document.getElementById('splash'), msg=document.getElementById('splashmsg');
+  if(APP_URL.indexOf('http')!==0){ frame.innerHTML='<div id=note>One step left: open index.html and paste your Apps Script /exec URL into APP_URL at the top.</div>'; return; }
+  function offline(){ msg.innerHTML='<b>&#9888;</b> No connection &mdash; Wind Brain needs the internet for live wind. It will load by itself when you are back online.'; splash.classList.remove('hide'); }
+  function hide(){ splash.classList.add('hide'); }
+  window.addEventListener('message',function(e){ if(e&&e.data==='wb-ready') setTimeout(hide,100); });
+  function load(){
+    if(!navigator.onLine){ offline(); return; }
+    msg.innerHTML='<b>&ndash;</b> Reading the wind &hellip;';
+    var old=document.getElementById('appfrm'); if(old) old.remove();
+    var f=document.createElement('iframe'); f.id='appfrm'; f.src=APP_URL; f.setAttribute('allow','fullscreen');
+    f.addEventListener('load',function(){ setTimeout(hide,9000); });
+    frame.appendChild(f);
+  }
+  window.addEventListener('online',load);
+  window.addEventListener('offline',offline);
+  load();
+})();
+</script>
+</body>
+</html>
