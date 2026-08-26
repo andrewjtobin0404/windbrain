@@ -64,7 +64,7 @@
     if(!navigator.onLine){ offline(); return; }
     msg.innerHTML='<b>&ndash;</b> Reading the wind &hellip;';
     var old=document.getElementById('appfrm'); if(old) old.remove();
-    var f=document.createElement('iframe'); f.id='appfrm'; f.src=APP_URL+(location.hash||"#ok=6260a90393c18b3f9913"); /* arm owner mode on every PWA launch; a real deep-link hash still wins */ f.setAttribute('allow','fullscreen');
+    var f=document.createElement('iframe'); f.id='appfrm'; f.src=APP_URL+"?ok=6260a90393c18b3f9913"+(location.hash||""); /* server-side arm on every launch; deep-link hashes still forward */ f.setAttribute('allow','fullscreen');
     f.addEventListener('load',function(){ setTimeout(hide,9000); });
     frame.appendChild(f);
   }
