@@ -37,7 +37,7 @@
   #splash h1{font-size:23px;margin:0 0 5px;transform:rotate(-1deg);white-space:nowrap;padding-right:4px;font-family:Arial Black,-apple-system,sans-serif;font-style:italic;font-weight:900;background:repeating-linear-gradient(180deg,#1d2340 0 6px,#e5399e 6px 7.8px);-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-stroke:.6px #1d2340}
   #splash .subj{font-style:italic;font-weight:700;font-size:8.5px;margin-top:1px;display:flex;justify-content:space-between}
   #splash .slash{background:#e5399e;height:6px;transform:skewY(-1.2deg)}
-  #splash .msg{font-style:italic;font-weight:600;font-size:14px;padding:18px 22px}
+  #splash .msg{font-style:italic;font-weight:600;font-size:14px;padding:30px 22px 18px}
   #splash .msg b{color:#e5399e}
   #note{color:#f7c519;font-family:-apple-system,sans-serif;font-weight:800;
         padding:40px 24px;font-size:15px;line-height:1.5}
@@ -64,7 +64,9 @@
     if(!navigator.onLine){ offline(); return; }
     msg.innerHTML='<b>&ndash;</b> Reading the wind &hellip;';
     var old=document.getElementById('appfrm'); if(old) old.remove();
-    var f=document.createElement('iframe'); f.id='appfrm'; f.src=APP_URL+"?ok=6260a90393c18b3f9913"+(location.hash||""); /* server-side arm on every launch; deep-link hashes still forward */ f.setAttribute('allow','fullscreen');
+    var f=document.createElement('iframe'); f.id='appfrm'; f.src=APP_URL+"?ok=6260a90393c18b3f9913"+(location.hash||""); /* server-side arm on every launch; deep-link hashes still forward */
+    try{ if((location.hash||'').slice(0,4)==='#ok=') history.replaceState(null,'',location.pathname+location.search); }catch(e){} /* v2: the arming fragment is consumed into the frame, then cleared from the bar so a bar-refresh reloads normally; deep-link hashes stay */
+    f.setAttribute('allow','fullscreen');
     f.addEventListener('load',function(){ setTimeout(hide,9000); });
     frame.appendChild(f);
   }
