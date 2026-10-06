@@ -22,8 +22,9 @@ if(!/[?&#]ok=/.test(location.search+location.hash)) document.write('<link rel="m
 <meta name="apple-mobile-web-app-title" content="Wind Brain">
 <meta name="theme-color" content="#1d2340">
 <style>
-  html,body{margin:0;padding:0;background:#1d2340}
-  body{display:flex;flex-direction:column;height:100vh;height:100dvh}
+  html,body{margin:0;padding:0;background:#1d2340;overscroll-behavior:none}
+  /* v3.0: the page is one pixel taller than the screen and kept scrolled by that pixel, so a tap on the status bar (iOS scrolls the outermost page to the top) has somewhere to go — the scroll to 0 is passed to the app as "wb-top" */
+  body{display:flex;flex-direction:column;height:100vh;height:100dvh;min-height:calc(100vh + 1px);min-height:calc(100dvh + 1px)}
   #safetop{flex:0 0 env(safe-area-inset-top,0px);background:#1d2340}
   #safebot{flex:0 0 env(safe-area-inset-bottom,0px);background:#1d2340}
   #frame{position:relative;flex:1 1 auto;min-height:0}
@@ -38,7 +39,7 @@ if(!/[?&#]ok=/.test(location.search+location.hash)) document.write('<link rel="m
   #splash h1{font-size:23px;margin:0 0 5px;transform:rotate(-1deg);white-space:nowrap;padding-right:4px;font-family:Arial Black,-apple-system,sans-serif;font-style:italic;font-weight:900;background:repeating-linear-gradient(180deg,#1d2340 0 6px,#e5399e 6px 7.8px);-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-stroke:.6px #1d2340}
   #splash .subj{font-style:italic;font-weight:700;font-size:8.5px;margin-top:1px;display:flex;justify-content:space-between}
   #splash .slash{background:#e5399e;height:6px;transform:skewY(-1.2deg)}
-  /* v2.9: the snapshot carries its own shelf life (ttl) from the app — a today page keeps for three days as before, another page (the Memory Bank, About, a day) only for the hour the app's own route keeps it, so the page painted beneath the strip is the page the app restores; v2.8: the key may ride in the query (?ok=) as well as the hash, the address is left as it is (no replaceState), and the manifest is left off an armed address — so a bookmark or an iPhone home-screen icon made from windbrainapp.com/?ok=<key> carries the key itself and needs no storage; v2.7: the owner key is no longer in this file — an armed device keeps it in its own storage after one #ok= visit; v2.6: the snapshot is passive and bounded (six seconds, no taps), the splash hides 2.5 s after the app frame loads, and a network flap no longer reloads a live app; v2.5: the snapshot frame (#snapfrm) paints the last page beneath the strip; v2.4: ONE loading line — the splash message is the app's refresh strip, in the strip's own place (under the band, before the slash) */
+  /* v3.0: THE STATUS-BAR TAP AND THE REBOOT ON RETURN — the tap on the status bar reaches only the outermost page, so this page keeps itself scrolled by one pixel and, when iOS scrolls it to 0 (not a resize), posts "wb-top" down the chain of frames to the app, which glides to its top; the app reboots (load() afresh) when the page comes back to the foreground after 15 s or more away (the home-screen icon with the app already open); v2.9: the snapshot carries its own shelf life (ttl) from the app — a today page keeps for three days as before, another page (the Memory Bank, About, a day) only for the hour the app's own route keeps it, so the page painted beneath the strip is the page the app restores; v2.8: the key may ride in the query (?ok=) as well as the hash, the address is left as it is (no replaceState), and the manifest is left off an armed address — so a bookmark or an iPhone home-screen icon made from windbrainapp.com/?ok=<key> carries the key itself and needs no storage; v2.7: the owner key is no longer in this file — an armed device keeps it in its own storage after one #ok= visit; v2.6: the snapshot is passive and bounded (six seconds, no taps), the splash hides 2.5 s after the app frame loads, and a network flap no longer reloads a live app; v2.5: the snapshot frame (#snapfrm) paints the last page beneath the strip; v2.4: ONE loading line — the splash message is the app's refresh strip, in the strip's own place (under the band, before the slash) */
   #splash .strip{text-align:center;font:italic 700 13px -apple-system,sans-serif;color:#1d2340;background:#eef1f5;padding:0;height:30px;line-height:30px;overflow:hidden;display:flex;align-items:center;justify-content:center;gap:8px;border-bottom:1px solid #e3e0d2}
   #splash .strip[hidden]{display:none}
   /* the offline notice keeps the app's notice shape (a .line in the content area) */
@@ -98,6 +99,14 @@ if(!/[?&#]ok=/.test(location.search+location.hash)) document.write('<link rel="m
   window.addEventListener('online',function(){ if(wasOffline||!document.getElementById('appfrm')) load(); }); /* v2.6: a spurious online event (iOS fires them on resume and on Wi-Fi/cellular hand-offs) no longer reloads a live app */
   window.addEventListener('offline',function(){ setTimeout(function(){ if(!navigator.onLine){ wasOffline=true; offline(); } },2500); }); /* v2.6: only a real, lasting drop shows the notice */
   load();
+  /* v3.0: the status-bar tap. The page is a pixel taller than the screen (min-height 100dvh + 1px) and parks itself scrolled by that pixel; iOS answers a tap on the status bar by scrolling the outermost page to the top — that scroll to 0, when no resize just happened, is the tap, and "wb-top" goes down the chain of frames (the app sits two frames down inside Google's sandbox; a frame's length and its numbered frames are readable across origins) to the app, which glides to its top; then the page parks again. */
+  var lastRz=0; function park(){ try{ if((document.documentElement.scrollHeight-window.innerHeight)>=1&&window.scrollY<1) window.scrollTo(0,1); }catch(e){} }
+  function topMsg(){ try{ var f=document.getElementById('appfrm'); if(!f||!f.contentWindow) return; var w=f.contentWindow, n=0; while(w&&n<6){ try{ w.postMessage('wb-top','*'); }catch(e1){} var c=null; try{ if(w.length>0) c=w[0]; }catch(e2){} if(!c||c===w) break; w=c; n++; } }catch(e){} }
+  window.addEventListener('resize',function(){ lastRz=Date.now(); setTimeout(park,60); });
+  window.addEventListener('scroll',function(){ try{ if(window.scrollY===0&&(Date.now()-lastRz)>400&&(document.documentElement.scrollHeight-window.innerHeight)>=1){ topMsg(); setTimeout(park,250); } }catch(e){} },{passive:true});
+  window.addEventListener('load',function(){ setTimeout(park,300); setTimeout(park,1500); });
+  /* v3.0: the reboot on return — the home-screen icon with the app already open: when the page comes back to the foreground after 15 s or more away, the app is loaded afresh (its own route keeps the page it was on for an hour); a glance away shorter than that changes nothing */
+  var hidAt=0; document.addEventListener('visibilitychange',function(){ try{ if(document.visibilityState==='hidden'){ hidAt=Date.now(); return; } if(document.visibilityState==='visible'&&hidAt&&(Date.now()-hidAt)>=(window.WB_REBOOT_MS||15000)){ hidAt=0; load(); } }catch(e){} });
 })();
 </script>
 </body>
