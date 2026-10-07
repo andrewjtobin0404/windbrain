@@ -8,7 +8,7 @@
 <!-- ▼▼ your Apps Script /exec URL ▼▼ -->
 <script>var APP_URL = "https://script.google.com/macros/s/AKfycbxwSRdEO-ypVAp8R8Z3NQfc0TcYvUWCFMe5gGoAPCa0m5ZD_vzFdkMYlNN3jiIbJ2U/exec";</script>
 <!-- ▲▲ nothing else needs editing ▲▲ -->
-<!-- wrapper v3.1 (2026-10-06): the splash on a wide screen, no snapshot on a desktop, the desktop return refreshes the app in place -->
+<!-- wrapper v3.2 (2026-10-07): the splash stays until the app stands (never lifted on the frame's load alone); a phone's return refreshes the app in place and reboots only after an hour away; the splash band tilts as the app's (one angle); v3.1: no snapshot on a desktop, the desktop return refreshes in place -->
 
 <script>/* v2.8: the manifest is left off an armed address (?ok= or #ok=) — an iPhone home-screen icon added from such a page keeps the page's own address, key and all, and opens armed every time; a plain address gets the manifest as before, so everyone else's icon opens the plain page */
 if(!/[?&#]ok=/.test(location.search+location.hash)) document.write('<link rel="manifest" href="manifest.webmanifest">');</script>
@@ -40,13 +40,6 @@ if(!/[?&#]ok=/.test(location.search+location.hash)) document.write('<link rel="m
   #splash h1{font-size:23px;margin:0 0 5px;transform:rotate(-1deg);white-space:nowrap;padding-right:4px;font-family:Arial Black,-apple-system,sans-serif;font-style:italic;font-weight:900;background:repeating-linear-gradient(180deg,#1d2340 0 6px,#e5399e 6px 7.8px);-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-stroke:.6px #1d2340}
   #splash .subj{font-style:italic;font-weight:700;font-size:8.5px;margin-top:1px;display:flex;justify-content:space-between}
   #splash .slash{background:#e5399e;height:6px;transform:skewY(-1.2deg)}
-  /* v3.1: the zine tilt is 8 px across a phone and 31 px across a 1480 px desktop — the angle steps down with the width, as the app's band does */
-  @media (min-width:480px){#splash .band{transform:skewY(-1deg)}#splash .band>div{transform:skewY(1deg)}#splash .slash{transform:skewY(-1deg)}}
-  @media (min-width:600px){#splash .band{transform:skewY(-.8deg)}#splash .band>div{transform:skewY(.8deg)}#splash .slash{transform:skewY(-.8deg)}}
-  @media (min-width:800px){#splash .band{transform:skewY(-.6deg)}#splash .band>div{transform:skewY(.6deg)}#splash .slash{transform:skewY(-.6deg)}}
-  @media (min-width:1100px){#splash .band{transform:skewY(-.45deg)}#splash .band>div{transform:skewY(.45deg)}#splash .slash{transform:skewY(-.45deg)}}
-  @media (min-width:1400px){#splash .band{transform:skewY(-.35deg)}#splash .band>div{transform:skewY(.35deg)}#splash .slash{transform:skewY(-.35deg)}}
-  @media (min-width:2000px){#splash .band{transform:skewY(-.25deg)}#splash .band>div{transform:skewY(.25deg)}#splash .slash{transform:skewY(-.25deg)}}
   /* v3.0: THE STATUS-BAR TAP AND THE REBOOT ON RETURN — the tap on the status bar reaches only the outermost page, so this page keeps itself scrolled by one pixel and, when iOS scrolls it to 0 (not a resize), posts "wb-top" down the chain of frames to the app, which glides to its top; the app reboots (load() afresh) when the page comes back to the foreground after 15 s or more away (the home-screen icon with the app already open); v2.9: the snapshot carries its own shelf life (ttl) from the app — a today page keeps for three days as before, another page (the Memory Bank, About, a day) only for the hour the app's own route keeps it, so the page painted beneath the strip is the page the app restores; v2.8: the key may ride in the query (?ok=) as well as the hash, the address is left as it is (no replaceState), and the manifest is left off an armed address — so a bookmark or an iPhone home-screen icon made from windbrainapp.com/?ok=<key> carries the key itself and needs no storage; v2.7: the owner key is no longer in this file — an armed device keeps it in its own storage after one #ok= visit; v2.6: the snapshot is passive and bounded (six seconds, no taps), the splash hides 2.5 s after the app frame loads, and a network flap no longer reloads a live app; v2.5: the snapshot frame (#snapfrm) paints the last page beneath the strip; v2.4: ONE loading line — the splash message is the app's refresh strip, in the strip's own place (under the band, before the slash) */
   #splash .strip{text-align:center;font:italic 700 13px -apple-system,sans-serif;color:#1d2340;background:#eef1f5;padding:0;height:30px;line-height:30px;overflow:hidden;display:flex;align-items:center;justify-content:center;gap:8px;border-bottom:1px solid #e3e0d2}
   #splash .strip[hidden]{display:none}
@@ -80,8 +73,8 @@ if(!/[?&#]ok=/.test(location.search+location.hash)) document.write('<link rel="m
   var frame=document.getElementById('frame'), splash=document.getElementById('splash'), msg=document.getElementById('splashmsg'), note=document.getElementById('splashnote');
   if(APP_URL.indexOf('http')!==0){ frame.innerHTML='<div id=note>One step left: open index.html and paste your Apps Script /exec URL into APP_URL at the top.</div>'; return; }
   function offline(){ msg.hidden=true; note.innerHTML='<b>&#9888;</b><span>No connection &mdash; Wind Brain needs the internet for live wind. It will load by itself when you are back online.</span>'; note.hidden=false; splash.classList.remove('hide'); }
-  function hide(){ splash.classList.add('hide'); }
-  window.addEventListener('message',function(e){ if(e&&e.data==='wb-ready') setTimeout(hide,100);
+  var ready=false, hideT=null; function hide(){ splash.classList.add('hide'); }
+  window.addEventListener('message',function(e){ if(e&&e.data==='wb-ready'){ ready=true; if(hideT){ clearTimeout(hideT); hideT=null; } setTimeout(hide,100); }
     /* v2.5: the app posts a script-free snapshot of the page after every render; keep the newest. v2.9: with its shelf life (ttl) — the app's today page three days, another page the hour the app's route keeps it */
     if(e&&e.data&&e.data.wb==='snap'&&typeof e.data.html==='string'&&e.data.html.length>2000){ try{ localStorage.setItem('wb_snap',JSON.stringify({t:Date.now(),ttl:(+e.data.ttl>0?+e.data.ttl:3*864e5),css:String(e.data.css||''),html:e.data.html})); }catch(eq){} } });
   var snapfrm=document.getElementById('snapfrm');
@@ -93,7 +86,7 @@ if(!/[?&#]ok=/.test(location.search+location.hash)) document.write('<link rel="m
       snapfrm.style.display='block'; }catch(e){ snapfrm.style.display='none'; } }
   var wasOffline=false, snapCap=null;
   function load(){
-    paintSnap();
+    ready=false; paintSnap();
     if(snapCap) clearTimeout(snapCap); snapCap=setTimeout(function(){ try{ snapfrm.style.display='none'; }catch(e){} },6000); /* v2.6: the snapshot is a passive preview and never outlives six seconds — a page that cannot be scrolled or tapped must not look live */
     if(!navigator.onLine){ offline(); return; }
     wasOffline=false;
@@ -103,7 +96,7 @@ if(!/[?&#]ok=/.test(location.search+location.hash)) document.write('<link rel="m
     if(kv==="off"){ okK=null; try{ localStorage.removeItem("wb_ok"); }catch(e1){} } else if(kv){ okK=kv; try{ localStorage.setItem("wb_ok",kv); }catch(e2){} } else { try{ okK=localStorage.getItem("wb_ok"); }catch(e3){ okK=null; } }
     f.src=APP_URL+(okK?"?ok="+encodeURIComponent(okK):"")+((hk.slice(0,4)==="#ok=")?"":hk); /* server-side arm on every launch of an armed device; deep-link hashes still forward, the arming hash is consumed here. v2.8: the address is left as it is — a bookmark or a home-screen icon made from an armed page carries the key itself */
     f.setAttribute('allow','fullscreen');
-    f.addEventListener('load',function(){ setTimeout(hide,2500); }); /* v2.6: the app paints from its embedded bundle within a second of loading; its own strip covers anything slower */
+    f.addEventListener('load',function(){ if(hideT) clearTimeout(hideT); hideT=setTimeout(function(){ hideT=null; if(!ready) hide(); },(window.WB_SPLASH_MAX_MS||40000)); }); /* v3.2: the frame's load is Apps Script's outer page, seconds before the app's HTML arrives (measured: load at 5 s, the app at 19 s) — the splash now lifts on the app's wb-ready alone; after 40 s without it the frame is shown as it is (an error page is better than a blank one). v2.6 lifted it 2.5 s after the load — the navy page behind an empty frame */
     frame.appendChild(f);
   }
   window.addEventListener('online',function(){ if(wasOffline||!document.getElementById('appfrm')) load(); }); /* v2.6: a spurious online event (iOS fires them on resume and on Wi-Fi/cellular hand-offs) no longer reloads a live app */
@@ -115,10 +108,10 @@ if(!/[?&#]ok=/.test(location.search+location.hash)) document.write('<link rel="m
   window.addEventListener('resize',function(){ lastRz=Date.now(); setTimeout(park,60); });
   window.addEventListener('scroll',function(){ try{ if(window.scrollY===0&&(Date.now()-lastRz)>400&&(document.documentElement.scrollHeight-window.innerHeight)>=1){ topMsg(); setTimeout(park,250); } }catch(e){} },{passive:true});
   window.addEventListener('load',function(){ setTimeout(park,300); setTimeout(park,1500); });
-  /* v3.0: the reboot on return — the home-screen icon with the app already open: when the page comes back to the foreground after 15 s or more away, the app is loaded afresh (its own route keeps the page it was on for an hour); a glance away shorter than that changes nothing */
+  /* v3.0: the reboot on return — the home-screen icon with the app already open: when the page comes back to the foreground after a long absence, the app is loaded afresh (its own route keeps the page it was on for an hour); a glance away changes nothing. v3.2: the threshold for a reboot is an hour (was 15 s — every return through Apps Script's load, and the navy page while it loaded); 15 s to an hour away refreshes in place */
   /* v3.1: on a desktop (a mouse) the reboot fired on every switch back from another window — the app reloaded through Apps Script's 3–6 s each time; a desktop now asks the app to refresh in place ("wb-refresh" down the chain of frames → the app's wbRefresh9) after five minutes away, and never reloads for a return */
   function refreshMsg(){ try{ var f=document.getElementById('appfrm'); if(!f||!f.contentWindow) return; var w=f.contentWindow, n=0; while(w&&n<6){ try{ w.postMessage('wb-refresh','*'); }catch(e1){} var c=null; try{ if(w.length>0) c=w[0]; }catch(e2){} if(!c||c===w) break; w=c; n++; } }catch(e){} }
-  var hidAt=0; document.addEventListener('visibilitychange',function(){ try{ if(document.visibilityState==='hidden'){ hidAt=Date.now(); return; } if(document.visibilityState!=='visible'||!hidAt) return; var away=Date.now()-hidAt; if(desk()){ if(away>=(window.WB_DESK_REFRESH_MS||300000)){ hidAt=0; refreshMsg(); } return; } if(away>=(window.WB_REBOOT_MS||15000)){ hidAt=0; load(); } }catch(e){} });
+  var hidAt=0; document.addEventListener('visibilitychange',function(){ try{ if(document.visibilityState==='hidden'){ hidAt=Date.now(); return; } if(document.visibilityState!=='visible'||!hidAt) return; var away=Date.now()-hidAt; if(desk()){ if(away>=(window.WB_DESK_REFRESH_MS||300000)){ hidAt=0; refreshMsg(); } return; } if(!ready){ if(away>=(window.WB_REFRESH_MS||15000)){ hidAt=0; load(); } return; } if(away>=(window.WB_REBOOT_MS||3600000)){ hidAt=0; load(); } else if(away>=(window.WB_REFRESH_MS||15000)){ hidAt=0; refreshMsg(); } }catch(e){} }); /* v3.2: a phone's return after 15 s refreshes the app in place (the page kept, the readings re-read); a reboot through Apps Script only after an hour away, or when the app never stood */
 })();
 </script>
 </body>
