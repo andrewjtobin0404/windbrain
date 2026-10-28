@@ -8,8 +8,12 @@
    and claims the open pages, and the next visit runs on it.
    NOTIFICATIONS: a push carries {t, b, u, tag, id} (the title, the alert's text, the day's deep link #d<date>, a tag per day); it is shown at once
    (the browsers require it). A tap focuses the open app and asks it to show that day (a message the page answers in its own frame), or opens the app at
-   that address. */
-var VERSION = '4.1';
+   that address.
+   v4.2 (2026-10-28): every notification ALERTS (renotify with its tag: a newer one for the same day no longer replaces the older silently); once it is
+   SHOWN the worker tells the app — ?rcpt=<the message's id> to the app's address (the APP_URL line of the kept index.html; the id only, nothing else) —
+   and the open pages ({wb:'shown', id}); when the browser changes the subscription (pushsubscriptionchange) the worker subscribes again with the same
+   key and tells the app (?resub=1 {old: the old endpoint, sub: the new one}), so the app's row follows it with no one's tap. */
+var VERSION = '4.2';
 var CACHE = 'wb-shell-' + VERSION;
 var SHELL = ['./', 'manifest.webmanifest', 'manifest-owner.webmanifest', 'icon-180.png', 'icon-192.png', 'icon-512.png', 'icon-maskable-512.png'];
 self.addEventListener('install', function (e) {
@@ -47,8 +51,27 @@ self.addEventListener('fetch', function (e) {
 self.addEventListener('push', function (e) {
   var d = {}; try { d = e.data ? e.data.json() : {}; } catch (x) { try { d = { b: e.data.text() }; } catch (y) { d = {}; } }
   if (!d || typeof d !== 'object') d = {};
-  var o = { body: String(d.b || ''), icon: 'icon-192.png', tag: String(d.tag || 'wb'), data: { u: String(d.u || '') } };
-  e.waitUntil(self.registration.showNotification(String(d.t || 'Wind Brain'), o));
+  var id = /^q[0-9a-f]{12}$/.test(String(d.id || '')) ? String(d.id) : '';
+  var o = { body: String(d.b || ''), icon: 'icon-192.png', tag: String(d.tag || 'wb'), renotify: true, data: { u: String(d.u || ''), id: id } };
+  e.waitUntil(self.registration.showNotification(String(d.t || 'Wind Brain'), o).then(function () { return id ? shown(id) : null; }));
+});
+function appUrl() {   /* the app's /exec address, as the kept index.html names it */
+  return caches.open(CACHE).then(function (c) { return c.match(pageKey()); }).then(function (r) { return r ? r.text() : ''; }).then(function (t) {
+    var m = /var APP_URL = "(https?:\/\/[^"]+)"/.exec(t || ''); return m ? m[1] : null; }).catch(function () { return null; });
+}
+function shown(id) {   /* the receipt: the id only, to the app; and the open pages told */
+  var tell = self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function (L) { L.forEach(function (c) { try { c.postMessage({ wb: 'shown', id: id }); } catch (x) {} }); }).catch(function () {});
+  var send = appUrl().then(function (u) { if (!u) return null; return fetch(u + '?rcpt=' + encodeURIComponent(id), { method: 'GET', mode: 'no-cors', credentials: 'omit', cache: 'no-store' }).catch(function () {}); });
+  return Promise.all([tell, send]).catch(function () {});
+}
+self.addEventListener('pushsubscriptionchange', function (e) {
+  var old = e.oldSubscription || null, nu = e.newSubscription || null;
+  var key = old && old.options ? old.options.applicationServerKey : null;
+  e.waitUntil((nu ? Promise.resolve(nu) : (key ? self.registration.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: key }) : Promise.resolve(null))).then(function (s) {
+    if (!s || !old || !old.endpoint) return null; var j = s.toJSON ? s.toJSON() : null; if (!j || !j.endpoint || !j.keys) return null;
+    return appUrl().then(function (u) { if (!u) return null;
+      return fetch(u + '?resub=1', { method: 'POST', mode: 'no-cors', credentials: 'omit', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ old: old.endpoint, sub: { endpoint: j.endpoint, keys: { p256dh: j.keys.p256dh, auth: j.keys.auth } } }) }).catch(function () {}); });
+  }).catch(function () {}));
 });
 self.addEventListener('notificationclick', function (e) {
   var h = String((e.notification && e.notification.data && e.notification.data.u) || '');
