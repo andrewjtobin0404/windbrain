@@ -12,7 +12,9 @@
    v4.2 (2026-10-28): every notification ALERTS (renotify with its tag: a newer one for the same day no longer replaces the older silently); once it is
    SHOWN the worker tells the app — ?rcpt=<the message's id> to the app's address (the APP_URL line of the kept index.html; the id only, nothing else) —
    and the open pages ({wb:'shown', id}); when the browser changes the subscription (pushsubscriptionchange) the worker subscribes again with the same
-   key and tells the app (?resub=1 {old: the old endpoint, sub: the new one}), so the app's row follows it with no one's tap. */
+   key and tells the app (?resub=1 {old: the old endpoint, sub: the new one}), so the app's row follows it with no one's tap.
+   v4.4 (2026-11-03, with the app v4.45; brief-fix17 C): a spot's notification carries #loc:<spot> (#loc:dor, #loc:caesarea, #loc:eilat), and a tap opens
+   that spot; every other address as before. VERSION stays 4.2: the shell's files are unchanged, so its cache is kept. */
 var VERSION = '4.2';
 var CACHE = 'wb-shell-' + VERSION;
 var SHELL = ['./', 'manifest.webmanifest', 'manifest-owner.webmanifest', 'icon-180.png', 'icon-192.png', 'icon-512.png', 'icon-maskable-512.png'];
@@ -75,7 +77,7 @@ self.addEventListener('pushsubscriptionchange', function (e) {
 });
 self.addEventListener('notificationclick', function (e) {
   var h = String((e.notification && e.notification.data && e.notification.data.u) || '');
-  if (!/^#(d\d{4}-\d{2}-\d{2}|mb|all|loc|about|perf|m\d{4}-\d{2}|s\d{4})$/.test(h)) h = '';
+  if (!/^#(d\d{4}-\d{2}-\d{2}|mb|all|loc|loc:[a-z]+|about|perf|m\d{4}-\d{2}|s\d{4})$/.test(h)) h = '';   /* v4.4 (with the app v4.45): a spot's notification opens that spot, #loc:dor */
   try { e.notification.close(); } catch (x) {}
   var url = pageKey() + h;
   e.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function (L) {
