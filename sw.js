@@ -14,8 +14,17 @@
    and the open pages ({wb:'shown', id}); when the browser changes the subscription (pushsubscriptionchange) the worker subscribes again with the same
    key and tells the app (?resub=1 {old: the old endpoint, sub: the new one}), so the app's row follows it with no one's tap.
    v4.4 (2026-11-03, with the app v4.45; brief-fix17 C): a spot's notification carries #loc:<spot> (#loc:dor, #loc:caesarea, #loc:eilat), and a tap opens
-   that spot; every other address as before. VERSION stays 4.2: the shell's files are unchanged, so its cache is kept. */
-var VERSION = '4.2';
+   that spot; every other address as before. VERSION stays 4.2: the shell's files are unchanged, so its cache is kept.
+   v4.5 (2026-11-10, with the app v4.56; brief-fix28 item 2 — SPEED): THIS PAGE FROM THE CACHE FIRST, AND THE KEPT APP. The page (index.html) is given
+   from the cache at once and fetched again in the background (stale-while-revalidate, past the HTTP cache): a new index.html is used on the next
+   open, and a weak or blocked connection to GitHub no longer holds the open (v4.1-v4.4 waited for the network up to 4 s). With nothing cached yet
+   the network answers, the cache when it fails. The kept app's script (kept/app-<version>.js, which the page writes into the wb-app cache) is
+   given from that cache only — it is in no file on the site; a missing one answers 404 and the page fetches the app again. kept/probe.js is a
+   one-line script that tells the page this browser gives a srcdoc frame's requests to the worker (only then is the app kept in two parts); the page
+   first asks this worker's version ({wb:'swv'}), so a probe is never answered by an older worker. VERSION 4.5: a new
+   shell cache (the page changed), the old one deleted when this worker takes over; wb-app is kept across versions of this worker. */
+var VERSION = '4.5';
+var APPC = 'wb-app';
 var CACHE = 'wb-shell-' + VERSION;
 var SHELL = ['./', 'manifest.webmanifest', 'manifest-owner.webmanifest', 'icon-180.png', 'icon-192.png', 'icon-512.png', 'icon-maskable-512.png'];
 self.addEventListener('install', function (e) {
@@ -31,24 +40,32 @@ self.addEventListener('fetch', function (e) {
   if (u.origin !== self.location.origin) return;                         /* never the script's requests, never another origin */
   var scope = new URL(self.registration.scope); if (u.pathname.indexOf(scope.pathname) !== 0) return;
   var rel = u.pathname.slice(scope.pathname.length);
+  if (rel === 'kept/probe.js') {                                     /* v4.5: the page asks once whether a srcdoc frame's script reaches this worker */
+    e.respondWith(new Response("try{parent.postMessage('wb-swok','*')}catch(e){}", { headers: { 'Content-Type': 'application/javascript; charset=utf-8' } }));
+    return;
+  }
+  if (rel.indexOf('kept/') === 0) {                                     /* v4.5: the kept app's script, from its cache only */
+    e.respondWith(caches.open(APPC).then(function (c) { return c.match(new URL(rel, self.registration.scope).href); }).then(function (r) { return r || new Response('', { status: 404 }); }, function () { return new Response('', { status: 404 }); }));
+    return;
+  }
   if (q.mode === 'navigate') {
     if (rel !== '' && rel !== 'index.html') return;                      /* only the app's page */
-    e.respondWith(new Promise(function (res) {
-      var done = false, tm = null;
-      var fromCache = function () { return caches.open(CACHE).then(function (c) { return c.match(pageKey()); }); };
-      tm = setTimeout(function () { fromCache().then(function (r) { if (r && !done) { done = true; res(r); } }); }, 4000);
-      fetch(q.url, { cache: 'no-cache', credentials: 'same-origin', redirect: 'manual' }).then(function (r) {   /* past the HTTP cache (GitHub Pages: 10 min), revalidated: a new index.html on the next open */
-        if (r && r.ok && r.type === 'basic') { var cp = r.clone(); caches.open(CACHE).then(function (c) { return c.put(pageKey(), cp); }).catch(function () {}); }
-        if (!done) { done = true; clearTimeout(tm); res(r); }
-      }, function () {
-        fromCache().then(function (r) { if (!done) { done = true; clearTimeout(tm); res(r || Response.error()); } });
-      });
-    }));
+    var fromNet = function () { return fetch(q.url, { cache: 'no-cache', credentials: 'same-origin', redirect: 'manual' }).then(function (r) {   /* past the HTTP cache (GitHub Pages: 10 min), revalidated */
+      if (r && r.ok && r.type === 'basic') { var cp = r.clone(); return caches.open(CACHE).then(function (c) { return c.put(pageKey(), cp); }).catch(function () {}).then(function () { return r; }); }
+      return r; }); };
+    e.respondWith(caches.open(CACHE).then(function (c) { return c.match(pageKey()); }).then(function (hit) {
+      if (hit) { e.waitUntil(fromNet().catch(function () {})); return hit; }   /* v4.5: the cached page at once; the network's copy for the next open */
+      return fromNet().catch(function () { return caches.open(CACHE).then(function (c) { return c.match(pageKey()); }).then(function (r) { return r || Response.error(); }); });
+    }, function () { return fetch(q); }));
     return;
   }
   if (!u.search && SHELL.indexOf(rel) >= 0 && rel !== './') {
     e.respondWith(caches.open(CACHE).then(function (c) { return c.match(q).then(function (r) { return r || fetch(q); }); }));
   }
+});
+self.addEventListener('message', function (e) {                       /* v4.5 (after the judges): the page asks which worker controls it before it probes */
+  var d = e && e.data; if (!d || d.wb !== 'swv') return;
+  var p = (e.ports && e.ports[0]) || e.source; try { if (p) p.postMessage({ wb: 'swv', v: VERSION }); } catch (x) {}
 });
 self.addEventListener('push', function (e) {
   var d = {}; try { d = e.data ? e.data.json() : {}; } catch (x) { try { d = { b: e.data.text() }; } catch (y) { d = {}; } }
