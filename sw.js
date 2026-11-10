@@ -19,11 +19,14 @@
    from the cache at once and fetched again in the background (stale-while-revalidate, past the HTTP cache): a new index.html is used on the next
    open, and a weak or blocked connection to GitHub no longer holds the open (v4.1-v4.4 waited for the network up to 4 s). With nothing cached yet
    the network answers, the cache when it fails. The kept app's script (kept/app-<version>.js, which the page writes into the wb-app cache) is
-   given from that cache only — it is in no file on the site; a missing one answers 404 and the page fetches the app again. kept/probe.js is a
+   given from that cache only — it is in no file on the site; a missing one answered 404 in v4.5 (v4.6: a one-line wb-nokept script, below) and the page fetches the app again. kept/probe.js is a
    one-line script that tells the page this browser gives a srcdoc frame's requests to the worker (only then is the app kept in two parts); the page
    first asks this worker's version ({wb:'swv'}), so a probe is never answered by an older worker. VERSION 4.5: a new
-   shell cache (the page changed), the old one deleted when this worker takes over; wb-app is kept across versions of this worker. */
-var VERSION = '4.5';
+   shell cache (the page changed), the old one deleted when this worker takes over; wb-app is kept across versions of this worker.
+   v4.6 (2026-11-10, with the app v4.57; brief-fix29 — SAFARI): a kept script that is not in the wb-app cache any more answers a one-line script
+   that tells the page so (wb-nokept), not a 404: the page then fetches the app again and keeps the quick start (a 404 looked like a browser that
+   does not give the frame's requests to the worker). VERSION 4.6: a new shell cache (the page changed). */
+var VERSION = '4.6';
 var APPC = 'wb-app';
 var CACHE = 'wb-shell-' + VERSION;
 var SHELL = ['./', 'manifest.webmanifest', 'manifest-owner.webmanifest', 'icon-180.png', 'icon-192.png', 'icon-512.png', 'icon-maskable-512.png'];
@@ -45,7 +48,8 @@ self.addEventListener('fetch', function (e) {
     return;
   }
   if (rel.indexOf('kept/') === 0) {                                     /* v4.5: the kept app's script, from its cache only */
-    e.respondWith(caches.open(APPC).then(function (c) { return c.match(new URL(rel, self.registration.scope).href); }).then(function (r) { return r || new Response('', { status: 404 }); }, function () { return new Response('', { status: 404 }); }));
+    var gone = function () { return new Response("try{parent.postMessage('wb-nokept','*')}catch(e){}", { headers: { 'Content-Type': 'application/javascript; charset=utf-8' } }); };   /* v4.6: the page fetches the app again, quick start kept */
+    e.respondWith(caches.open(APPC).then(function (c) { return c.match(new URL(rel, self.registration.scope).href); }).then(function (r) { return r || gone(); }, function () { return gone(); }));
     return;
   }
   if (q.mode === 'navigate') {
