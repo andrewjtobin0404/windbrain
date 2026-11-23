@@ -25,8 +25,9 @@
    shell cache (the page changed), the old one deleted when this worker takes over; wb-app is kept across versions of this worker.
    v4.6 (2026-11-10, with the app v4.57; brief-fix29 — SAFARI): a kept script that is not in the wb-app cache any more answers a one-line script
    that tells the page so (wb-nokept), not a 404: the page then fetches the app again and keeps the quick start (a 404 looked like a browser that
-   does not give the frame's requests to the worker). VERSION 4.6: a new shell cache (the page changed). */
-var VERSION = '4.6';
+   does not give the frame's requests to the worker). VERSION 4.6: a new shell cache (the page changed).
+   v4.8 (2026-11-23, with the app v4.68): nothing changes but VERSION, so the website's new page (its splash band, ruling 20.eg) is cached afresh. */
+var VERSION = '4.8';
 var APPC = 'wb-app';
 var CACHE = 'wb-shell-' + VERSION;
 var SHELL = ['./', 'manifest.webmanifest', 'manifest-owner.webmanifest', 'icon-180.png', 'icon-192.png', 'icon-512.png', 'icon-maskable-512.png'];
